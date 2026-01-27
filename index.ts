@@ -1,6 +1,4 @@
 import Pbf from 'pbf';
-import {type Feature, GEOJSON_TILE_LAYER_NAME, type GeoJSONOptions, GeoJSONWrapper} from "./lib/geojson_wrapper";
-import type {GeoJSONVTTile} from '@maplibre/geojson-vt';
 import type {VectorTileFeatureLike, VectorTileLike, VectorTileLayerLike} from './lib/types';
 
 interface Context {
@@ -21,25 +19,6 @@ export function fromVectorTileJs(tile: VectorTileLike): Uint8Array {
     const out = new Pbf();
     writeTile(tile, out);
     return out.finish();
-}
-
-/**
- * Serialized a geojson-vt-created tile to pbf.
- *
- * @param layers - An object mapping layer names to geojson-vt-created vector tile objects
- * @param options - An object specifying the vector-tile specification version and extent that were used to create `layers`.
- * @return uncompressed, pbf-serialized tile data
- */
-export function fromGeojsonVt(layers: Record<string, GeoJSONVTTile>, options?: GeoJSONOptions): Uint8Array {
-    const l: Record<string, VectorTileLayerLike> = {};
-    // eslint-disable-next-line @typescript-eslint/no-for-in-array
-    for (const k in layers) {
-        l[k] = new GeoJSONWrapper(layers[k].features, options);
-        l[k].name = k;
-        l[k].version = options ? options.version : 1;
-        l[k].extent = options ? options.extent : 4096;
-    }
-    return fromVectorTileJs({ layers: l });
 }
 
 function writeTile(tile: VectorTileLike, pbf: Pbf) {
@@ -177,10 +156,6 @@ function writeValue(value: string | boolean | number, pbf: Pbf) {
 }
 
 export {
-    GeoJSONWrapper,
-    GeoJSONOptions,
-    Feature,
-    GEOJSON_TILE_LAYER_NAME,
     VectorTileFeatureLike,
     VectorTileLike,
     VectorTileLayerLike,

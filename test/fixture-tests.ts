@@ -1,74 +1,9 @@
 import {test, expect, describe} from 'vitest';
-import geojsonvt from '@maplibre/geojson-vt';
 import {VectorTile} from '@mapbox/vector-tile';
 import Pbf from 'pbf';
 import {isValid} from '@maplibre/vtvalidate';
-import geojsonFixtures, {Geometries} from '@mapbox/geojson-fixtures';
 import mvtf, {Fixture} from '@mapbox/mvt-fixtures';
-import GeoJsonEquality from 'geojson-equality';
-import {readFileSync} from 'fs';
-import {fromVectorTileJs, fromGeojsonVt} from '../index';
-
-interface FixtureEntry {
-  name: string,
-  data: GeoJSON.GeoJSON;
-};
-
-const eq = new GeoJsonEquality({ precision: 1 });
-
-describe('geojson-vt', function () {
-  [
-    // Geometries
-    ...[
-      'polygon',
-      'point',
-      'multipoint',
-      'multipolygon',
-      'polygon',
-      'multilinestring'
-    ].map((type: string): FixtureEntry => {
-      return {
-        name: type,
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: geojsonFixtures.geometry[type as Geometries]
-        }
-      };
-    }),
-    // FeatureCollection
-   {
-    name: 'collection',
-    data: JSON.parse(
-      readFileSync(__dirname + '/fixtures/featurecollection.geojson').toString()
-    ) as GeoJSON.GeoJSON
-   }
-  ].forEach((fixture: FixtureEntry) => {
-    test(fixture.name, () => {
-      const tile = geojsonvt(fixture.data, {}).getTile(0, 0, 0);
-      expect(tile).toBeTruthy();
-      if (!tile) {
-        return;
-      }
-
-      const buff = fromGeojsonVt({ geojsonLayer: tile });
-      isValid(buff, (error: Error, result: string) => {
-        expect(error).toBeFalsy();
-        expect(result).toEqual('');
-
-        // Compare roundtripped features with originals
-        const expected = fixture.data.type === 'FeatureCollection' ? fixture.data.features : [fixture.data];
-        const layer = new VectorTile(new Pbf(buff)).layers.geojsonLayer;
-        expect(layer.length).toEqual(expected.length);
-        
-        for (let i = 0; i < layer.length; i++) {
-          const actual = layer.feature(i).toGeoJSON(0, 0, 0);
-          expect(eq.compare(actual, expected[i])).toBeTruthy();
-        }
-      });
-    });
-  });
-});
+import {fromVectorTileJs} from '../index';
 
 describe('vector-tile-js', () => {
   // See https://github.com/mapbox/mvt-fixtures/blob/master/FIXTURES.md for
